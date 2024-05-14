@@ -4,7 +4,6 @@ import {prisma} from '../db'
 export class User{
 
 
-
     async createUser(req:Request,res:Response){
         const {name,cpf,email,password,tel,emerg} = req.body
 
@@ -25,6 +24,41 @@ export class User{
 
         return res.json({sucess:'true'})
     
+    }
+
+    async deleteUser(req:Request,res:Response){
+        const {id} = req.params
+        const user = await prisma.user.delete({
+            where:{
+                id: id
+            }
+        });
+        return res.json(user)
+        
+    }
+
+    async updateUser(req:Request,res:Response){
+
+        const {name,cpf,email,password,tel,emerg} = req.body
+        const {id} = req.params
+        const hashedpassword = bcrypt.hashSync(password,10)
+
+        const user = await prisma.user.update({
+            where:{
+                id:id
+            },
+            data:{
+                name:name,
+                cpf:cpf,
+                email:email,
+                password:hashedpassword,
+                tel:tel,
+                emerg:emerg
+            }
+            
+        });
+        return res.json(user)
+        
     }
 
 
@@ -59,11 +93,11 @@ export class User{
 
         const user = resp[0]
 
-        const passCorrect = bcrypt.compareSync(password,user.password)
+        const passCorrect = bcrypt.compareSync(password,user.password!)
         if(passCorrect){
-            return user.id
+            return res.json(user)
         }
-        return null
+        return res.json({sucess:false})
 
     }
 
