@@ -24,11 +24,24 @@ model User{
    name            String
    cpf             String         @unique
    email           String         @unique
-   password        String? 
+   password        String
    tel             String         @unique
    emerg           String  
    active          Boolean?
    mensalidade     String?
+   planoId         String?          
+   plano           Plano?          @relation(fields: [planoId],references: [id]) 
+   
   
+  
+}
+
+model Plano{
+  id              String         @id @default(cuid())
+  name            String         
+  value           String 
+  duration        String
+  user            User[]
+  qtd             Int?
 }
 
