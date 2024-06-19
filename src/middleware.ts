@@ -5,7 +5,8 @@ export function middleware(req:Request,res:Response,next: NextFunction){
 
     // Request methods you wish to allow
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    console.log('adadadad')
+    
+    
     // Request headers you wish to allow
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
 

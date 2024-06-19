@@ -11,6 +11,20 @@ export class Plano{
         return res.json(users)
     }
 
+    async zeraPlano(req:Request,res:Response){
+        const {id} = req.params
+        const users = await prisma.plano.update({
+            where:{
+                id:id
+            },
+            data:{
+                qtd: 0
+            }
+        })
+
+        return res.json(users)
+    }
+
 
     async createPlanos(req:Request,res:Response){
         const {name,value,duration} = await req.body;
@@ -36,6 +50,7 @@ export class Plano{
                 id:id
             }
         })
+        res.json(plano)
 
 
     }

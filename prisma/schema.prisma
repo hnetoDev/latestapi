@@ -27,11 +27,15 @@ model User{
    password        String
    tel             String         @unique
    emerg           String  
+   genero          String?
    active          Boolean?
-   mensalidade     String?
+   mensalidade     String
    planoId         String?          
-   plano           Plano?          @relation(fields: [planoId],references: [id]) 
-   
+   plano           Plano?         @relation(fields: [planoId],references: [id]) 
+   entradaId       String?
+   entrada         Entrada?       @relation(fields: [entradaId],references: [id]) 
+   treinoId        String?
+   treino          Treino?        @relation(fields: [treinoId], references: [id])
   
   
 }
@@ -44,4 +48,41 @@ model Plano{
   user            User[]
   qtd             Int?
 }
+
+
+model Caixa{
+  id              String         @id @default(cuid())
+  name            Int            @unique
+  aplicativo      Int?
+  pix             Int?
+  dinheiro        Int?
+
+}
+
+model Entrada{
+  id             String          @id @default(cuid())
+  name           String
+  method         String          
+  date           String
+  month          Int?
+  user           User[]
+}
+
+
+model Exercicio{
+  id            String          @id @default(cuid())
+  name          String          @unique
+  desc          String
+
+  treino        Treino[]
+}
+
+model Treino{
+  id            String          @id @default(cuid())
+  name          String          @unique
+  user          User[]
+  exercicioId   String?
+  exercicio     Exercicio?     @relation(fields: [exercicioId], references: [id])
+}
+
 

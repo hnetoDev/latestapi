@@ -1,11 +1,15 @@
 import { Request, Response } from "express";
 import bcrypt from 'bcrypt'
 import {prisma} from '../db'
+
+import { Caixa } from "./caixaControll";
+
+const caixa = new Caixa()
 export class User{
 
 
     async createUser(req:Request,res:Response){
-        const {name,cpf,email,password,tel,emerg,planoId} = await req.body
+        const {name,cpf,email,password,tel,emerg,planoId,mensalidade,genero} = await req.body
         const salt = await bcrypt.genSalt(10)
         const hashedpassword = await bcrypt.hash(password,salt)
         console.log(hashedpassword);
@@ -19,6 +23,7 @@ export class User{
         const plano = await prisma.plano.update({
             where:{
                 id:planoId
+            
             },
             data:{
                 qtd:qtd! + 1
@@ -27,6 +32,7 @@ export class User{
 
         console.log(plano.qtd)
 
+        
         
 
 
@@ -38,7 +44,9 @@ export class User{
                 password:hashedpassword,
                 tel:tel,
                 emerg:emerg,
-                planoId:planoId
+                planoId:planoId,
+                mensalidade:mensalidade,
+                genero:genero
             }
         })
 
@@ -148,32 +156,15 @@ export class User{
                 emerg:emerg,
                 planoId:planoId
             }
-            
+
         });
         return res.json(user)
-        
-    }
-    async getPayment(req:Request,res:Response){
 
-        const {active} = req.body
-        const {id} = req.params
-       
-
-        
-        const user = await prisma.user.update({
-            where:{
-                id:id
-            },
-            data:{
-                active:active
-            }
-            
-        });
-        return res.json(user)
         
     }
     
-    
+        
+     
 
 
     async getById(req:Request,res:Response){
@@ -190,8 +181,63 @@ export class User{
 
 
     async getUser(req:Request,res:Response){
-        const users = await prisma.user.findMany();
+        const {search} = req.params
+        console.log(search)
+        const splitado = search.split(' ')
+        console.log(splitado)
+        if(splitado[0] === 'false' && splitado[1] === 'false'){
+            console.log('oi')
+            const users = await prisma.user.findMany({
+                orderBy:{
+                    mensalidade:'desc'
+                }
+            })
+            return res.json(users)
+        }
 
+        if(splitado[1] !== 'false' && splitado[0] !== 'false'){
+            const users = await prisma.user.findMany({
+                where:{
+                    name:{
+                        contains:splitado[0],
+                        mode:'insensitive'
+                    },
+                    active:splitado[1] === 'active' ? true : false
+                },
+                orderBy:{
+                    mensalidade:'desc'
+                }
+            })
+            return res.json(users)
+
+        }
+
+        if(splitado[0] === 'false' && splitado[1] !== 'false'){
+            const users = await prisma.user.findMany({
+                where:{
+                    active:splitado[1] === 'active' ? true : false
+                },
+                
+            })
+            console.log(users)
+            return res.json(users)
+        }
+
+        const users = await prisma.user.findMany({
+            where:{
+                name:{
+                    contains:splitado[0],
+                    mode:'insensitive'
+
+                }
+            },
+            orderBy:{
+                mensalidade:'desc'
+            }
+        })
+        
+        console.log(users)
+        
         return res.json(users)
     }
 
@@ -215,6 +261,236 @@ export class User{
         return res.json({sucess:false})
 
     }
+
+
+
+
+
+    async getPaymentTest(req:Request,res:Response){
+        console.log('aq')
+
+        const {active,method,date} = req.body
+        const {id} = req.params
+
+        let result;
+
+        if(active){
+
+        const userPrev = await prisma.user.findUnique({
+            where:{
+                id:id
+            }
+        })
+        const planoId = userPrev?.planoId as string
+
+        const plano = await prisma.plano.findUnique({
+            where:{
+                id:planoId
+            }
+        })
+
+        const value = Number(plano?.value)
+
+
+        const data = new Date();
+        const month = data.getMonth()
+        const day = data.getDate()
+        const year = data.getFullYear()
+
+        
+
+        
+        let sucess:boolean;
+        
+
+
+        const caixa = await prisma.caixa.findUnique({
+            where:{
+                name:month
+            }
+        })
+        const entrada = await prisma.entrada.create({
+            data:{
+                name:userPrev!.name,
+                method:method,
+                date: date,
+            }
+        })
+        const user = await prisma.user.update({
+            where:{
+                id:id
+            },
+            data:{
+                entradaId:entrada.id
+            }
+        })
+        if(method === 'pix'){
+          
+
+            const valuePrev = caixa?.pix ? caixa?.pix : 0
+
+            result = await prisma.caixa.update({
+                where:{
+                    name:(month)
+                },
+                data:{
+                    pix: valuePrev + (value ? value : 0)
+                }
+            })
+
+            
+
+        } else if(method === 'dinheiro'){
+          
+
+            const valuePrev = caixa?.dinheiro ? caixa?.dinheiro : 0
+
+        
+            result = await prisma.caixa.update({
+                where:{
+                    name:(month)
+                },
+                data:{
+                    dinheiro: valuePrev + (value ? value : 0)
+                }
+            })
+
+           
+
+
+        } else if(method === 'aplicativo'){
+          
+
+            const valuePrev = caixa?.aplicativo ? caixa?.aplicativo : 0
+
+            result = await prisma.caixa.update({
+                where:{
+                    name:(month)
+                },
+                data:{
+                    pix: valuePrev + (value ? value : 0)
+                }
+            })
+           
+
+          
+        }
+
+        }
+        
+
+        
+    
+
+
+
+
+       
+        /* const results = months.map(async(m) =>{    
+            console.log(month,count)
+
+            if(month === count){
+                console.log('achei')
+                const caixa = await prisma.caixa.findUnique({
+                    where:{
+                        name:(count)
+                    }
+                })
+                const entrada = await prisma.entrada.create({
+                    data:{
+                        name:userPrev!.name,
+                        method:method,
+                        date: `${day}/${month}/${year}`,
+                        month: count
+                    }
+                })
+                if(method === 'pix'){
+                  
+
+                    const valuePrev = caixa?.pix ? caixa?.pix : 0
+
+                    const result = await prisma.caixa.update({
+                        where:{
+                            name:(count)
+                        },
+                        data:{
+                            pix: valuePrev + (value ? value : 0)
+                        }
+                    })
+
+                    
+
+                     
+                     return result
+
+                } else if(method === 'dinheiro'){
+                  
+
+                    const valuePrev = caixa?.dinheiro ? caixa?.dinheiro : 0
+
+                
+                    const result = await prisma.caixa.update({
+                        where:{
+                            name:(count)
+                        },
+                        data:{
+                            dinheiro: valuePrev + (value ? value : 0)
+                        }
+                    })
+
+                   
+
+                    return result
+
+                } else if(method === 'aplicativo'){
+                  
+
+                    const valuePrev = caixa?.aplicativo ? caixa?.aplicativo : 0
+
+                    const result = await prisma.caixa.update({
+                        where:{
+                            name:(count)
+                        },
+                        data:{
+                            pix: valuePrev + (value ? value : 0)
+                        }
+                    })
+                   
+
+                    return result
+                }
+
+                count++
+
+                
+            }
+
+            count++
+            return
+
+        })
+        */
+
+
+        res.json(result)
+
+        const user = await prisma.user.update({
+            where:{
+                id:id
+            },
+            data:{
+                active:active
+            }
+        })
+
+    
+    }
+
+
+
+
+
+
 
 
 }
